@@ -11,24 +11,24 @@ class Batch:
 
     def __init__(
         self,
-        ref: str,
-        sku: str,
-        qty: int,
-        eta: date | None,
+        reference: str,
+        stock_keeping_unit: str,
+        quantity: int,
+        estimated_arrival_time: date | None,
     ) -> None:
         """Create new instance.
 
         Args:
-            ref (str): order reference.
-            sku (str): stock keeping unit.
-            qty (int): quantity.
-            eta (date | None): estimated arrival time.
+            reference (str): order reference.
+            stock_keeping_unit (str): stock keeping unit.
+            quantity (int): quantity.
+            estimated_arrival_time (date | None): estimated arrival time.
 
         """
-        self.reference: str = ref
-        self.sku: str = sku
-        self.eta: date | None = eta
-        self._purchased_quantity: int = qty
+        self.reference: str = reference
+        self.stock_keeping_unit: str = stock_keeping_unit
+        self.estimated_arrival_time: date | None = estimated_arrival_time
+        self._purchased_quantity: int = quantity
         self._allocations: set[OrderLine] = set()
 
     def allocate(self, line: OrderLine) -> None:
@@ -61,7 +61,10 @@ class Batch:
             bool: True if can allocate.
 
         """
-        return self.sku == line.sku and self.available_quantity >= line.qty
+        return (
+            self.stock_keeping_unit == line.stock_keeping_unit
+            and self.available_quantity >= line.quantity
+        )
 
     @property
     def allocated_quantity(self) -> int:
@@ -71,7 +74,7 @@ class Batch:
             int: allocated quantity.
 
         """
-        return sum(line.qty for line in self._allocations)
+        return sum(line.quantity for line in self._allocations)
 
     @property
     def available_quantity(self) -> int:
@@ -93,10 +96,10 @@ class Batch:
             bool: True if greater.
 
         """
-        if self.eta is None:
+        if self.estimated_arrival_time is None:
             return False
 
-        if other.eta is None:
+        if other.estimated_arrival_time is None:
             return True
 
-        return self.eta > other.eta
+        return self.estimated_arrival_time > other.estimated_arrival_time

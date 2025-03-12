@@ -8,5 +8,5 @@ class OrderLine:
     """Order line entity."""
 
     order_id: str
-    sku: str
-    qty: int
+    stock_keeping_unit: str
+    quantity: int

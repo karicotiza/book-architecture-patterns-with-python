@@ -37,17 +37,17 @@ def test_batch_allocate_reduce_available_quantity(
 
     """
     batch: Batch = Batch(
-        ref="batch-001",
-        sku="SMALL-TABLE",
-        qty=batch_quantity,
-        eta=datetime.now(UTC).date(),
+        reference="batch-001",
+        stock_keeping_unit="SMALL-TABLE",
+        quantity=batch_quantity,
+        estimated_arrival_time=datetime.now(UTC).date(),
     )
 
     for index in range(repeat):
         line: OrderLine = OrderLine(
-            order_id=f"order-ref-00{index}",
-            sku="SMALL-TABLE",
-            qty=order_line_quantity,
+            order_id=f"order-reference-00{index}",
+            stock_keeping_unit="SMALL-TABLE",
+            quantity=order_line_quantity,
         )
 
         batch.allocate(line)
@@ -89,16 +89,16 @@ def test_batch_can_allocate(
 
     """
     batch: Batch = Batch(
-        ref="batch-001",
-        sku=batch_sku,
-        qty=batch_quantity,
-        eta=datetime.now(UTC).date(),
+        reference="batch-001",
+        stock_keeping_unit=batch_sku,
+        quantity=batch_quantity,
+        estimated_arrival_time=datetime.now(UTC).date(),
     )
 
     line: OrderLine = OrderLine(
-        order_id="order-ref-001",
-        sku=order_line_sku,
-        qty=order_line_quantity,
+        order_id="order-reference-001",
+        stock_keeping_unit=order_line_sku,
+        quantity=order_line_quantity,
     )
 
     assert batch.can_allocate(line) is can_allocate
@@ -134,16 +134,16 @@ def test_batch_deallocate(
 
     """
     batch: Batch = Batch(
-        ref="batch-001",
-        sku=batch_sku,
-        qty=batch_quantity,
-        eta=datetime.now(UTC).date(),
+        reference="batch-001",
+        stock_keeping_unit=batch_sku,
+        quantity=batch_quantity,
+        estimated_arrival_time=datetime.now(UTC).date(),
     )
 
     line: OrderLine = OrderLine(
-        order_id="order-ref-001",
-        sku=order_line_sku,
-        qty=order_line_quantity,
+        order_id="order-reference-001",
+        stock_keeping_unit=order_line_sku,
+        quantity=order_line_quantity,
     )
 
     batch.deallocate(line)
