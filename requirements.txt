@@ -1,3 +1,6 @@
+# Infrastructure
+sqlalchemy==2.0.39
+
 # Linters
 ruff==0.9.10
 wemake_python_styleguide==1.0.0
