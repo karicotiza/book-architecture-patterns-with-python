@@ -1,4 +1,4 @@
-"""SQL alchemy repository."""
+"""PostgreSQL repository."""
 
 from typing import TYPE_CHECKING
 
@@ -14,7 +14,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Session, registry, relationship
 
 from src.domain.entities.batch import Batch
-from src.domain.repositories.repository import IRepository
+from src.domain.interfaces.repositories.sql_repository import SQLRepository
 from src.domain.value_objects.order_line import OrderLine
 
 if TYPE_CHECKING:
@@ -69,26 +69,26 @@ def create_mappers() -> None:
     )
 
 
-class SQLAlchemyRepository(IRepository):
-    """SQL alchemy repository."""
+class PostgreSQLRepository(SQLRepository):
+    """PostgreSQL repository."""
 
     def __init__(self, session: Session) -> None:
         """Create new instance.
 
         Args:
-            session (Session): sql alchemy orm session.
+            session (Session): SQLAlchemy's session.
 
         """
         self._session: Session = session
 
-    def add(self, batch: Batch) -> None:
-        """Add batch entity to repository.
+    def all(self) -> list[Batch]:
+        """Get all batch entities from repository.
 
-        Args:
-            batch (Batch): batch entity.
+        Returns:
+            list[Batch]: list of batch entities.
 
         """
-        self._session.add(batch)
+        return self._session.query(Batch).all()
 
     def get(self, reference: str) -> Batch:
         """Get batch entity from repository by reference.
@@ -102,11 +102,11 @@ class SQLAlchemyRepository(IRepository):
         """
         return self._session.query(Batch).filter_by(reference=reference).one()
 
-    def list(self) -> list[Batch]:
-        """Get all batch entities from repository.
+    def add(self, batch: Batch) -> None:
+        """Add batch entity to repository.
 
-        Returns:
-            list[Batch]: list of batch entities.
+        Args:
+            batch (Batch): batch entity.
 
         """
-        return self._session.query(Batch).all()
+        self._session.add(batch)

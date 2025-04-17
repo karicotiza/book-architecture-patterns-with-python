@@ -1,0 +1,26 @@
+name: book-architecture-patterns-with-python
+
+services:
+  postgres:
+    image: postgres:17.3-bookworm
+    container_name: book-architecture-patterns-with-python-postgres
+    restart: unless-stopped
+    volumes:
+      - ../../../data/postgres:/var/lib/postgresql/data
+    environment:
+      - PGUSER=admin
+      - PGDATABASE=book-architecture-patterns-with-python
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin
+      - POSTGRES_DB=book-architecture-patterns-with-python
+      - POSTGRES_HOST_AUTH_METHOD=trust
+      - POSTGRES_INITDB_ARGS=--auth-host=scram-sha-256
+      - POSTGRES_HOST_AUTH_METHOD=scram-sha-256
+    ports:
+      - 5432:5432
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready", "-d", "book-architecture-patterns-with-python"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s

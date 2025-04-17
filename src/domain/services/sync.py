@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from src.domain.repositories.file_system import IFileSystem
+from src.domain.interfaces.repositories.file_system import IFileSystem
 from src.domain.services.reader import Reader
 
 

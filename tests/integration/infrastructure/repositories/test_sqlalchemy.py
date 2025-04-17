@@ -8,8 +8,8 @@ from sqlalchemy import Engine, Result, create_engine, text
 from sqlalchemy.orm import Session, clear_mappers, sessionmaker
 
 from src.domain.entities.batch import Batch
-from src.infrastructure.repositories.sqlalchemy import (
-    SQLAlchemyRepository,
+from src.infrastructure.repositories.sql_repository.postgresql import (
+    PostgreSQLRepository,
     create_mappers,
     metadata,
 )
@@ -60,7 +60,7 @@ def _insert_batch(session: Session, batch_id: str) -> str:
         statement=text(
             "INSERT INTO batches (reference, stock_keeping_unit, "
             "_purchased_quantity, estimated_arrival_time) "
-            'VALUES (:batch_id, "GENERIC-SOFA", 100, null)',
+            'VALUES (:batch_id, "GENERIC-SOFA", 100, null)'
         ),
         params={
             "batch_id": batch_id,
@@ -82,7 +82,9 @@ def _insert_batch(session: Session, batch_id: str) -> str:
 
 
 def _insert_allocation(
-    session: Session, order_line_id: str, batch_id: str
+    session: Session,
+    order_line_id: str,
+    batch_id: str,
 ) -> None:
     session.execute(
         statement=text(
@@ -110,9 +112,8 @@ def test_repository_can_save_batch(session: Session) -> None:
         estimated_arrival_time=None,
     )
 
-    repository: SQLAlchemyRepository = SQLAlchemyRepository(session)
+    repository: PostgreSQLRepository = PostgreSQLRepository(session)
     repository.add(batch)
-
     session.commit()
 
     rows: list = list(
@@ -140,7 +141,7 @@ def test_repository_can_get_batch(session: Session) -> None:
     _insert_batch(session, "batch-003")
     _insert_allocation(session, order_line_id, batch1_id)
 
-    repo: SQLAlchemyRepository = SQLAlchemyRepository(session)
+    repo: PostgreSQLRepository = PostgreSQLRepository(session)
     retrieved: Batch = repo.get("batch-002")
 
     excepted = Batch(

@@ -1,0 +1,1 @@
+"""Flask data transfer objects."""

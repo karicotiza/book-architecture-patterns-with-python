@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from src.domain.repositories.file_system import IFileSystem
+from src.domain.interfaces.repositories.file_system import IFileSystem
 from src.domain.value_objects.file_system_command import FileSystemCommand
 from src.domain.value_objects.file_system_command_action import (
     FileSystemCommandAction,

@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 
 
-@dataclass(frozen=True)
+@dataclass(unsafe_hash=True)
 class OrderLine:
     """Order line entity."""
 

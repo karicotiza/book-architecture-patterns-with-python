@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from src.domain.repositories.file_system import IFileSystem
+from src.domain.interfaces.repositories.file_system import IFileSystem
 from src.domain.services.reader import Reader
 from src.domain.services.sync import SyncService
 from src.domain.value_objects.file_system_command import FileSystemCommand
