@@ -1,21 +1,23 @@
-"""Allocation data transfer objects."""
+"""Add batch data transfer objects."""
 
 from dataclasses import dataclass
+from datetime import date
 from typing import Any, Self
 
 from flask import Request, Response, jsonify
 
-from src.domain.value_objects.order_line import OrderLine
+from src.domain.entities.batch import Batch
 from src.presentation.utils.status_codes import StatusCode
 
 
 @dataclass(frozen=True, slots=True)
-class AllocateRequestBody:
-    """Allocation request body."""
+class AddBatchRequestBody:
+    """Add batch request body."""
 
-    order_id: str
+    reference: str
     stock_keeping_unit: str
     quantity: int
+    estimated_arrival_time: date | None
 
     @classmethod
     def from_flask_request(cls, request: Request) -> Self:
@@ -44,23 +46,24 @@ class AllocateRequestBody:
 
         return cls(**request.json)
 
-    def as_order_line(self) -> OrderLine:
+    def as_batch(self) -> Batch:
         """Get as order line.
 
         Returns:
-            OrderLine: order line value object.
+            Batch: batch entity.
 
         """
-        return OrderLine(
-            order_id=self.order_id,
+        return Batch(
+            reference=self.reference,
             stock_keeping_unit=self.stock_keeping_unit,
             quantity=self.quantity,
+            estimated_arrival_time=self.estimated_arrival_time,
         )
 
 
 @dataclass(frozen=True, slots=True)
-class AllocateResponseBody:
-    """Allocation response body."""
+class AddBatchResponseBody:
+    """Add batch response body."""
 
     body: dict[str, Any]
     status_code: StatusCode

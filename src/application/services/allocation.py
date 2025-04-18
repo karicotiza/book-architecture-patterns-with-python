@@ -17,12 +17,20 @@ class AllocationAppService:
 
     def allocate(
         self,
-        order_line: OrderLine,
+        order_id: str,
+        stock_keeping_unit: str,
+        quantity: int,
         repository: SQLRepository,
         session: Session,
     ) -> str:
         """Process allocation."""
         batches: list[Batch] = repository.all()
+
+        order_line: OrderLine = OrderLine(
+            order_id=order_id,
+            stock_keeping_unit=stock_keeping_unit,
+            quantity=quantity,
+        )
 
         if not self._is_valid_sku(order_line.stock_keeping_unit, batches):
             msg: str = f"Invalid SKU: {order_line.stock_keeping_unit}"

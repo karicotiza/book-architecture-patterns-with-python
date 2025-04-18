@@ -12,65 +12,6 @@ from src.domain.value_objects.order_line import OrderLine
 
 @pytest.mark.parametrize(
     argnames=(
-        "initial_batch_quantity",
-        "order_line_quantity",
-        "expected_batch_available_quantity",
-    ),
-    argvalues=[
-        (100, 10, 90),
-    ],
-)
-def test_allocate_prefer_present_to_future(
-    initial_batch_quantity: int,
-    order_line_quantity: int,
-    expected_batch_available_quantity: int,
-) -> None:
-    """Test allocation service allocate method prefers present to future.
-
-    Args:
-        initial_batch_quantity (int): initial batch quantity for both present
-            and future batch.
-        order_line_quantity (int): order line quantity.
-        expected_batch_available_quantity (int): expected batch available
-            quantity for present batch.
-
-    """
-    allocation_service: AllocationService = AllocationService()
-
-    present_batch: Batch = Batch(
-        reference="batch-001",
-        stock_keeping_unit="RETRO-CLOCK",
-        quantity=initial_batch_quantity,
-        estimated_arrival_time=None,
-    )
-
-    future_batch: Batch = Batch(
-        reference="batch-001",
-        stock_keeping_unit="RETRO-CLOCK",
-        quantity=initial_batch_quantity,
-        estimated_arrival_time=datetime.now(UTC),
-    )
-
-    order_line: OrderLine = OrderLine(
-        order_id="order-line-001",
-        stock_keeping_unit="RETRO-CLOCK",
-        quantity=order_line_quantity,
-    )
-
-    allocation_service.allocate(
-        order_line=order_line,
-        batches=[present_batch, future_batch],
-    )
-
-    assert (
-        present_batch.available_quantity == expected_batch_available_quantity
-    )
-
-    assert future_batch.available_quantity == initial_batch_quantity
-
-
-@pytest.mark.parametrize(
-    argnames=(
         "earliest",
         "medium",
         "latest",

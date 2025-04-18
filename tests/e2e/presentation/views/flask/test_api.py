@@ -5,15 +5,39 @@ from typing import Any
 import pytest
 from requests import Response, post
 
-from src.domain.entities.batch import Batch
 from src.infrastructure.settings import settings
 from tests.utils.generate_random import (
     random_batch_reference,
     random_order_id,
     random_stock_keeping_unit,
 )
-from tests.utils.sql_database_filler import SQLRepositoryFiller
-from tests.utils.to_date import string_to_date
+
+
+def post_to_add_batch(
+    reference: str,
+    stock_keeping_unit: str,
+    quantity: int,
+    estimated_arrival_time: str | None,
+) -> None:
+    """Make post request ot add batch.
+
+    Args:
+        reference (str): reference.
+        stock_keeping_unit (str): stock keeping unit.
+        quantity (int): quantity.
+        estimated_arrival_time (date): estimated arrival time.
+
+    """
+    post(
+        url=f"{settings.api_url}/add_batch",
+        json={
+            "reference": reference,
+            "stock_keeping_unit": stock_keeping_unit,
+            "quantity": quantity,
+            "estimated_arrival_time": estimated_arrival_time,
+        },
+        timeout=5,
+    )
 
 
 @pytest.mark.parametrize(
@@ -37,33 +61,30 @@ def test_api_created(
     later_batch: str,
     other_batch: str,
     expected_status_code: int,
-    sql_repository_filler: SQLRepositoryFiller,
 ) -> None:
     """Test API returns 201 on known SKU and choose earliest batch."""
     first_stock_keeping_unit: str = random_stock_keeping_unit("first")
     second_stock_keeping_unit: str = random_stock_keeping_unit("second")
 
-    sql_repository_filler.add_batches(
-        batches=[
-            Batch(
-                reference=later_batch,
-                stock_keeping_unit=first_stock_keeping_unit,
-                quantity=100,
-                estimated_arrival_time=string_to_date("2011-01-02"),
-            ),
-            Batch(
-                reference=early_batch,
-                stock_keeping_unit=first_stock_keeping_unit,
-                quantity=100,
-                estimated_arrival_time=string_to_date("2011-01-01"),
-            ),
-            Batch(
-                reference=other_batch,
-                stock_keeping_unit=second_stock_keeping_unit,
-                quantity=100,
-                estimated_arrival_time=None,
-            ),
-        ]
+    post_to_add_batch(
+        reference=later_batch,
+        stock_keeping_unit=first_stock_keeping_unit,
+        quantity=100,
+        estimated_arrival_time="2011-01-02",
+    )
+
+    post_to_add_batch(
+        reference=early_batch,
+        stock_keeping_unit=first_stock_keeping_unit,
+        quantity=100,
+        estimated_arrival_time="2011-01-01",
+    )
+
+    post_to_add_batch(
+        reference=other_batch,
+        stock_keeping_unit=second_stock_keeping_unit,
+        quantity=100,
+        estimated_arrival_time=None,
     )
 
     payload: dict[str, Any] = {
