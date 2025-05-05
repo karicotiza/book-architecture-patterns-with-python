@@ -110,3 +110,10 @@ class PostgreSQLRepository(SQLRepository):
 
         """
         self._session.add(batch)
+
+    def truncate(self) -> None:
+        """Truncate tables."""
+        for table in reversed(metadata.sorted_tables):
+            self._session.execute(table.delete())
+
+        self._session.commit()

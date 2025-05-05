@@ -1,12 +1,9 @@
 """Add application service tests."""
 
 import pytest
-from sqlalchemy.orm import Session
 
 from src.application.services.add import AddAppService
-from tests.mocks.infrastructure.repositories.sql_repository import (
-    SQLRepositoryMock,
-)
+from tests.mocks.infrastructure.uow.allocation import AllocationUOWMock
 
 
 @pytest.fixture
@@ -20,10 +17,7 @@ def add_app_service() -> AddAppService:
     return AddAppService()
 
 
-def test_add_batch(
-    add_app_service: AddAppService,
-    session: Session,
-) -> None:
+def test_add_batch(add_app_service: AddAppService) -> None:
     """Test add app service's add_batch method.
 
     Args:
@@ -31,12 +25,11 @@ def test_add_batch(
         session (Session): session.
 
     """
-    sql_repository: SQLRepositoryMock = SQLRepositoryMock([])
+    unit_of_work: AllocationUOWMock = AllocationUOWMock()
 
     add_app_service.add_batch(
         batch=("b1", "CRUNCHY-ARMCHAIR", 100, None),
-        repository=sql_repository,
-        session=session,
+        unit_of_work=unit_of_work,
     )
 
-    assert sql_repository.get("b1") is not None
+    assert unit_of_work.batches.get("b1") is not None

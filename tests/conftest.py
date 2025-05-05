@@ -6,11 +6,6 @@ import pytest
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session, clear_mappers, sessionmaker
 
-from src.domain.interfaces.repositories.file_system import IFileSystem
-from src.domain.services.sync import SyncService
-from src.infrastructure.repositories.file_system.fake_file_system import (
-    FakeFileSystem,
-)
 from src.infrastructure.repositories.sql_repository.postgresql import (
     create_mappers,
     metadata,
@@ -29,25 +24,23 @@ def in_memory_db() -> Engine:
 
 
 @pytest.fixture
-def sync_service() -> SyncService:
-    """Sync service fixture.
+def session_factory(
+    in_memory_db: Engine,
+) -> Generator[sessionmaker, None, None]:
+    """Session factory fixture.
 
-    Returns:
-        SyncService: sync service.
+    Args:
+        in_memory_db (Engine): Engine.
 
-    """
-    return SyncService()
-
-
-@pytest.fixture
-def file_system() -> IFileSystem:
-    """File system fixture.
-
-    Returns:
-        IFileSystem: file system.
+    Yields:
+        Generator[Session, None, None]: session factory.
 
     """
-    return FakeFileSystem()
+    create_mappers()
+
+    yield sessionmaker(bind=in_memory_db)
+
+    clear_mappers()
 
 
 @pytest.fixture
@@ -64,6 +57,16 @@ def session(in_memory_db: Engine) -> Generator[Session, None, None]:
     create_mappers()
 
     yield sessionmaker(bind=in_memory_db)()
+
+    clear_mappers()
+
+
+@pytest.fixture
+def sqlalchemy_mapping() -> Generator[bool, None, None]:
+    """SQLAlchemy mapping fixture."""
+    create_mappers()
+
+    yield True
 
     clear_mappers()
 

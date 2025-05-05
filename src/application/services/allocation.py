@@ -1,11 +1,11 @@
 """Allocation application service."""
 
-from sqlalchemy.orm import Session
-
 from src.domain.entities.batch import Batch
-from src.domain.interfaces.repositories.sql_repository import SQLRepository
 from src.domain.services.allocate import AllocationService
 from src.domain.value_objects.order_line import OrderLine
+from src.infrastructure.uow.allocation.postgresql_allocation import (
+    PostgresqlAllocationUOW,
+)
 
 
 class InvalidSKUError(Exception):
@@ -20,28 +20,28 @@ class AllocationAppService:
         order_id: str,
         stock_keeping_unit: str,
         quantity: int,
-        repository: SQLRepository,
-        session: Session,
+        unit_of_work: PostgresqlAllocationUOW,
     ) -> str:
         """Process allocation."""
-        batches: list[Batch] = repository.all()
-
         order_line: OrderLine = OrderLine(
             order_id=order_id,
             stock_keeping_unit=stock_keeping_unit,
             quantity=quantity,
         )
 
-        if not self._is_valid_sku(order_line.stock_keeping_unit, batches):
-            msg: str = f"Invalid SKU: {order_line.stock_keeping_unit}"
-            raise InvalidSKUError(msg)
+        with unit_of_work:
+            batches: list[Batch] = unit_of_work.batches.all()
 
-        batch_reference: str = AllocationService().allocate(
-            order_line=order_line,
-            batches=batches,
-        )
+            if not self._is_valid_sku(order_line.stock_keeping_unit, batches):
+                msg: str = f"Invalid SKU: {order_line.stock_keeping_unit}"
+                raise InvalidSKUError(msg)
 
-        session.commit()
+            batch_reference = AllocationService().allocate(
+                order_line=order_line,
+                batches=batches,
+            )
+
+            unit_of_work.commit()
 
         return batch_reference
 

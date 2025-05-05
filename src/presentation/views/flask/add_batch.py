@@ -3,14 +3,11 @@
 from typing import TYPE_CHECKING
 
 from flask import Blueprint, Response, request
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
 
 from src.application.services.add import AddAppService
-from src.infrastructure.repositories.sql_repository.postgresql import (
-    PostgreSQLRepository,
+from src.infrastructure.uow.allocation.postgresql_allocation import (
+    PostgresqlAllocationUOW,
 )
-from src.infrastructure.settings import settings
 from src.presentation.dtos.flask.add_batch import (
     AddBatchRequestBody,
     AddBatchResponseBody,
@@ -23,8 +20,6 @@ if TYPE_CHECKING:
 
 add_batch_blueprint: Blueprint = Blueprint("add_batch", __name__)
 
-session: Session = sessionmaker(create_engine(settings.postgres_uri))()
-repository: PostgreSQLRepository = PostgreSQLRepository(session)
 add_app_service: AddAppService = AddAppService()
 
 
@@ -47,8 +42,7 @@ def add_batch_endpoint() -> tuple[Response, int]:
             body.available_quantity,
             body.estimated_arrival_time,
         ),
-        repository=repository,
-        session=session,
+        unit_of_work=PostgresqlAllocationUOW(),
     )
 
     return AddBatchResponseBody(

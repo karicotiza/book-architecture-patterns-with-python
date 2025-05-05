@@ -3,18 +3,15 @@
 from typing import TYPE_CHECKING
 
 from flask import Blueprint, Response, request
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
 
 from src.application.services.allocation import (
     AllocationAppService,
     InvalidSKUError,
 )
 from src.domain.exceptions.out_of_stock import OutOfStockError
-from src.infrastructure.repositories.sql_repository.postgresql import (
-    PostgreSQLRepository,
+from src.infrastructure.uow.allocation.postgresql_allocation import (
+    PostgresqlAllocationUOW,
 )
-from src.infrastructure.settings import settings
 from src.presentation.dtos.flask.allocate import (
     AllocateRequestBody,
     AllocateResponseBody,
@@ -27,8 +24,6 @@ if TYPE_CHECKING:
 
 allocate_blueprint: Blueprint = Blueprint("allocate", __name__)
 
-session: Session = sessionmaker(create_engine(settings.postgres_uri))()
-repository: PostgreSQLRepository = PostgreSQLRepository(session)
 allocation_app_service: AllocationAppService = AllocationAppService()
 
 
@@ -49,8 +44,7 @@ def allocate_endpoint() -> tuple[Response, int]:
             order_id=body.order_id,
             stock_keeping_unit=body.stock_keeping_unit,
             quantity=body.quantity,
-            repository=repository,
-            session=session,
+            unit_of_work=PostgresqlAllocationUOW(),
         )
 
     except (OutOfStockError, InvalidSKUError) as error:
