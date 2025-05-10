@@ -14,18 +14,18 @@ class AllocationUOWMock:
 
     def __init__(self) -> None:
         """Create new instance."""
-        self._batches: SQLRepositoryMock = SQLRepositoryMock([])
+        self._products: SQLRepositoryMock = SQLRepositoryMock([])
         self.committed: bool = False
 
     @property
-    def batches(self) -> SQLRepository:
-        """Get batches.
+    def products(self) -> SQLRepository:
+        """Get products.
 
         Returns:
-            SQLRepository: Batches as SQL repository.
+            SQLRepository: Products as SQL repository.
 
         """
-        return self._batches
+        return self._products
 
     def commit(self) -> None:
         """Commit changes."""

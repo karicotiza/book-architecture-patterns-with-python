@@ -1,48 +1,48 @@
 """SQL repository mock."""
 
-from src.domain.entities.batch import Batch
+from src.domain.aggregates.product import Product
 
 
 class SQLRepositoryMock:
     """SQL repository mock."""
 
-    def __init__(self, batches: list[Batch]) -> None:
+    def __init__(self, products: list[Product]) -> None:
         """Create new instance.
 
         Args:
-            batches (list[Batch]): initial data.
+            products (list[Batch]): initial data.
 
         """
-        self._batches = set(batches)
+        self._products = set(products)
 
-    def all(self) -> list[Batch]:
-        """Get all batch entities from repository.
-
-        Returns:
-            list[Batch]: list of batch entities.
-
-        """
-        return list(self._batches)
-
-    def get(self, reference: str) -> Batch:
-        """Get batch entity from repository by reference.
+    def get(self, stock_keeping_unit: str) -> Product | None:
+        """Get product aggregate from repository by reference.
 
         Args:
-            reference (str): batch entity reference.
+            stock_keeping_unit (str): stock keeping unit.
 
         Returns:
-            Batch: batch entity
+            Product: product aggregate
 
         """
-        return next(
-            batch for batch in self._batches if batch.reference == reference
-        )
+        product: Product | None = None
 
-    def add(self, batch: Batch) -> None:
-        """Add batch entity to repository.
+        try:
+            product = next(
+                product
+                for product in self._products
+                if product.stock_keeping_unit == stock_keeping_unit
+            )
+        except StopIteration:
+            product = None
+
+        return product
+
+    def add(self, product: Product) -> None:
+        """Add product aggregate to repository.
 
         Args:
-            batch (Batch): batch entity.
+            product (Product): product aggregate.
 
         """
-        self._batches.add(batch)
+        self._products.add(product)

@@ -10,11 +10,11 @@ class AllocationUOW(Protocol):
     """Allocation unit of work."""
 
     @property
-    def batches(self) -> SQLRepository:
-        """Get batches.
+    def products(self) -> SQLRepository:
+        """Get products.
 
         Returns:
-            SQLRepository: Batches as SQL repository.
+            SQLRepository: Products as SQL repository.
 
         """
         ...

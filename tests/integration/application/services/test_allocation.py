@@ -9,6 +9,7 @@ from src.application.services.allocation import (
     AllocationAppService,
     InvalidSKUError,
 )
+from src.domain.aggregates.product import Product
 from src.infrastructure.uow.allocation.postgresql_allocation import (
     PostgresqlAllocationUOW,
 )
@@ -90,14 +91,16 @@ def test_error_for_invalid_sku(
     argnames=(
         "initial_batch_quantity",
         "order_line_quantity",
+        "stock_keeping_unit",
     ),
     argvalues=[
-        (100, 10),
+        (100, 10, "RETRO-CLOCK"),
     ],
 )
 def test_prefers_warehouse(
     initial_batch_quantity: int,
     order_line_quantity: int,
+    stock_keeping_unit: str,
     allocation_app_service: AllocationAppService,
     add_app_service: AddAppService,
 ) -> None:
@@ -106,6 +109,7 @@ def test_prefers_warehouse(
     Args:
         initial_batch_quantity (int): initial batch quantity.
         order_line_quantity (int): order line quantity.
+        stock_keeping_unit (str): stock keeping unit.
         allocation_app_service (AllocationAppService): allocation app service.
         add_app_service (AddAppService): add app service.
         session (Session): session.
@@ -114,19 +118,19 @@ def test_prefers_warehouse(
     unit_of_work: PostgresqlAllocationUOW = PostgresqlAllocationUOW()
 
     with unit_of_work:
-        unit_of_work.batches.truncate()
+        unit_of_work.products.truncate()
 
     unit_of_work = PostgresqlAllocationUOW()
 
     add_app_service.add_batch(
-        batch=("batch-001", "RETRO-CLOCK", initial_batch_quantity, None),
+        batch=("batch-001", stock_keeping_unit, initial_batch_quantity, None),
         unit_of_work=unit_of_work,
     )
 
     add_app_service.add_batch(
         batch=(
             "batch-002",
-            "RETRO-CLOCK",
+            stock_keeping_unit,
             initial_batch_quantity,
             datetime.now(UTC),
         ),
@@ -135,17 +139,17 @@ def test_prefers_warehouse(
 
     allocation_app_service.allocate(
         order_id="order-line-001",
-        stock_keeping_unit="RETRO-CLOCK",
+        stock_keeping_unit=stock_keeping_unit,
         quantity=order_line_quantity,
         unit_of_work=unit_of_work,
     )
 
-    assert (
-        unit_of_work.batches.get("batch-001").available_quantity
-        == initial_batch_quantity - order_line_quantity
-    )
+    product: Product | None = unit_of_work.products.get(stock_keeping_unit)
 
-    assert (
-        unit_of_work.batches.get("batch-002").available_quantity
-        == initial_batch_quantity
-    )
+    if isinstance(product, Product):
+        assert (
+            product.batches[0].available_quantity
+            == initial_batch_quantity - order_line_quantity
+        )
+
+        assert product.batches[1].available_quantity == initial_batch_quantity

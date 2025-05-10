@@ -2,6 +2,7 @@
 
 from datetime import date
 
+from src.domain.aggregates.product import Product
 from src.domain.entities.batch import Batch
 from src.domain.interfaces.uow.allocation import AllocationUOW
 
@@ -24,8 +25,20 @@ class AddAppService:
 
         """
         with unit_of_work:
-            unit_of_work.batches.add(
-                batch=Batch(
+            product: Product | None = unit_of_work.products.get(
+                stock_keeping_unit=batch[1],
+            )
+
+            if product is None:
+                product = Product(
+                    stock_keeping_unit=batch[1],
+                    batches=[],
+                )
+
+                unit_of_work.products.add(product)
+
+            product.batches.append(
+                Batch(
                     reference=batch[0],
                     stock_keeping_unit=batch[1],
                     quantity=batch[2],

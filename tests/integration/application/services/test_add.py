@@ -32,4 +32,4 @@ def test_add_batch(add_app_service: AddAppService) -> None:
         unit_of_work=unit_of_work,
     )
 
-    assert unit_of_work.batches.get("b1") is not None
+    assert unit_of_work.products.get("CRUNCHY-ARMCHAIR") is not None

@@ -53,11 +53,11 @@ class PostgresqlAllocationUOW:
         raise ValueError(self._msg)
 
     @property
-    def batches(self) -> PostgreSQLRepository:
-        """Get batches.
+    def products(self) -> PostgreSQLRepository:
+        """Get products.
 
         Returns:
-            SQLRepository: Batches as SQL repository.
+            SQLRepository: products as SQL repository.
 
         """
         if self._session:

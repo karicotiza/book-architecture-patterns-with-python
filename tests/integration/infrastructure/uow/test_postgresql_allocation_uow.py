@@ -8,8 +8,8 @@ import pytest
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from src.domain.aggregates.product import Product
 from src.domain.entities.batch import Batch
-from src.domain.services.allocate import AllocationService
 from src.domain.value_objects.order_line import OrderLine
 from src.infrastructure.uow.allocation.postgresql_allocation import (
     PostgresqlAllocationUOW,
@@ -24,36 +24,40 @@ ESTIMATED_ARRIVAL_TIME: str = "estimated_arrival_time"
 
 def insert_batch(
     session: Session,
-    batch_reference: str,
-    stock_keeping_unit: str,
-    quantity: str,
-    estimated_arrival_time: date | None,
+    batch: tuple[str, str, str, date | None, int],
 ) -> None:
     """Insert batch.
 
     Args:
         session (Session): SQLAlchemy's session.
-        batch_reference (str): batch reference.
-        stock_keeping_unit (str): stock keeping unit.
-        quantity (str): quantity.
-        estimated_arrival_time (date | None): estimated arrival time.
-
-    Returns:
-        str: batch reference.
+        batch (tuple[str, str, str, date | None, int]): batch reference,
+            stock keeping unit, quantity, estimated arrival time and
+            version number.
 
     """
     session.execute(
         statement=text(
+            "INSERT INTO products (stock_keeping_unit, version_number) "
+            "VALUES (:stock_keeping_unit, :version_number)"
+        ),
+        params={
+            "stock_keeping_unit": batch[1],
+            "version_number": batch[4],
+        },
+    )
+
+    session.execute(
+        statement=text(
             "INSERT INTO batches (reference, stock_keeping_unit,"
             " _purchased_quantity, estimated_arrival_time) "
-            "VALUES (:reference, :stock_keeping_unit, :quantity,"
+            "VALUES (:reference, :stock_keeping_unit, :_purchased_quantity,"
             " :estimated_arrival_time)"
         ),
         params={
-            "reference": batch_reference,
-            STOCK_KEEPING_UNIT: stock_keeping_unit,
-            QUANTITY: quantity,
-            ESTIMATED_ARRIVAL_TIME: estimated_arrival_time,
+            "reference": batch[0],
+            "stock_keeping_unit": batch[1],
+            "_purchased_quantity": batch[2],
+            "estimated_arrival_time": batch[3],
         },
     )
 
@@ -132,10 +136,13 @@ def test_can_retrieve_a_batch_and_allocate_to_it(
 
     insert_batch(
         session=session,
-        batch_reference=batch_reference,
-        stock_keeping_unit=stock_keeping_unit,
-        quantity=str(quantity),
-        estimated_arrival_time=estimated_arrival_time,
+        batch=(
+            batch_reference,
+            stock_keeping_unit,
+            str(quantity),
+            estimated_arrival_time,
+            1,
+        ),
     )
 
     unit_of_work: PostgresqlAllocationUOW = PostgresqlAllocationUOW(
@@ -143,7 +150,7 @@ def test_can_retrieve_a_batch_and_allocate_to_it(
     )
 
     with unit_of_work:
-        batch: Batch = unit_of_work.batches.get(batch_reference)
+        product: Product | None = unit_of_work.products.get(stock_keeping_unit)
 
         order_line: OrderLine = OrderLine(
             order_id="order-line-001",
@@ -151,8 +158,9 @@ def test_can_retrieve_a_batch_and_allocate_to_it(
             quantity=10,
         )
 
-        batch.allocate(order_line)
-        unit_of_work.commit()
+        if isinstance(product, Product):
+            product.allocate(order_line)
+            unit_of_work.commit()
 
     allocated_batch_reference: str = get_allocated_batch_ref(
         session=session,
@@ -188,18 +196,24 @@ def test_add_batch(
 
     """
     uow: AllocationUOWMock = AllocationUOWMock()
-    uow.batches.add(
-        batch=Batch(
-            reference=batch_reference,
+    uow.products.add(
+        product=Product(
             stock_keeping_unit=stock_keeping_unit,
-            quantity=quantity,
-            estimated_arrival_time=estimated_arrival_time,
+            batches=[
+                Batch(
+                    reference=batch_reference,
+                    stock_keeping_unit=stock_keeping_unit,
+                    quantity=quantity,
+                    estimated_arrival_time=estimated_arrival_time,
+                ),
+            ],
+            version_number=0,
         )
     )
 
     uow.commit()
 
-    assert uow.batches.get(batch_reference) is not None
+    assert uow.products.get(stock_keeping_unit) is not None
     assert uow.committed
 
 
@@ -229,25 +243,33 @@ def test_allocate_returns_allocation(
     """
     uow: AllocationUOWMock = AllocationUOWMock()
 
-    uow.batches.add(
-        batch=Batch(
-            reference=batch_reference,
+    uow.products.add(
+        product=Product(
             stock_keeping_unit=stock_keeping_unit,
-            quantity=quantity,
-            estimated_arrival_time=estimated_arrival_time,
-        )
-    )
-
-    allocated_batch: str = AllocationService().allocate(
-        order_line=OrderLine(
-            order_id="order-003",
-            stock_keeping_unit=stock_keeping_unit,
-            quantity=quantity,
+            batches=[
+                Batch(
+                    reference=batch_reference,
+                    stock_keeping_unit=stock_keeping_unit,
+                    quantity=quantity,
+                    estimated_arrival_time=estimated_arrival_time,
+                )
+            ],
+            version_number=0,
         ),
-        batches=uow.batches.all(),
     )
 
-    assert allocated_batch == batch_reference
+    product: Product | None = uow.products.get(stock_keeping_unit)
+
+    if isinstance(product, Product):
+        allocated_batch: str = product.allocate(
+            line=OrderLine(
+                order_id="order-003",
+                stock_keeping_unit=stock_keeping_unit,
+                quantity=quantity,
+            )
+        )
+
+        assert allocated_batch == batch_reference
 
 
 @pytest.mark.parametrize(
@@ -281,10 +303,13 @@ def test_rolls_back_uncommitted_work_by_default(
     with uow:
         insert_batch(
             session=uow.session,
-            batch_reference=batch_reference,
-            stock_keeping_unit=stock_keeping_unit,
-            quantity=str(quantity),
-            estimated_arrival_time=estimated_arrival_time,
+            batch=(
+                batch_reference,
+                stock_keeping_unit,
+                str(quantity),
+                estimated_arrival_time,
+                1,
+            ),
         )
 
     new_session: Session = session_factory()
@@ -327,10 +352,13 @@ def test_rolls_back_on_error(
     with uow, pytest.raises(ValueError, match=msg):  # noqa: PT012
         insert_batch(
             session=uow.session,
-            batch_reference=batch_reference,
-            stock_keeping_unit=stock_keeping_unit,
-            quantity=str(quantity),
-            estimated_arrival_time=estimated_arrival_time,
+            batch=(
+                batch_reference,
+                stock_keeping_unit,
+                str(quantity),
+                estimated_arrival_time,
+                1,
+            ),
         )
         raise ValueError(msg)
 

@@ -2,38 +2,29 @@
 
 from typing import Protocol
 
-from src.domain.entities.batch import Batch
+from src.domain.aggregates.product import Product
 
 
 class SQLRepository(Protocol):
     """SQL repository interface."""
 
-    def all(self) -> list[Batch]:
-        """Get all batch entities from repository.
+    def get(self, stock_keeping_unit: str) -> Product | None:
+        """Get product aggregate from repository by stock keeping unit.
+
+        Args:
+            stock_keeping_unit (str): stock keeping unit.
 
         Returns:
-            list[Batch]: all batch entities
+            Product | None: product aggregate.
 
         """
         ...
 
-    def get(self, reference: str) -> Batch:
-        """Get batch entity from repository by reference.
+    def add(self, product: Product) -> None:
+        """Add product aggregate to repository.
 
         Args:
-            reference (str): batch entity reference.
-
-        Returns:
-            Batch: batch entity
-
-        """
-        ...
-
-    def add(self, batch: Batch) -> None:
-        """Add batch entity to repository.
-
-        Args:
-            batch (Batch): batch entity.
+            product (Product): product aggregate.
 
         """
         ...
